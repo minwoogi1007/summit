@@ -150,7 +150,7 @@ export function extractBibleReferences(text: string): string[] {
   }
   
   // 중복 제거
-  return [...new Set(references)];
+  return Array.from(new Set(references));
 }
 
 // 성경 구절을 포맷팅
