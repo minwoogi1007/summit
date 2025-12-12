@@ -9,6 +9,7 @@
   --font-pretendard: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
   --font-nanum-pen: 'Nanum Pen Script', cursive;
   
+  /* 라이트 모드 */
   --background: #fdf8f3;
   --foreground: #3a1c14;
   --card: #ffffff;
@@ -23,6 +24,24 @@
   --accent-foreground: #ffffff;
   --border: #e9be96;
   --ring: #d5804a;
+}
+
+/* 다크 모드 */
+.dark {
+  --background: #1a1a2e;
+  --foreground: #e8e0d8;
+  --card: #252542;
+  --card-foreground: #e8e0d8;
+  --primary: #e89b5f;
+  --primary-foreground: #1a1a2e;
+  --secondary: #3d3d5c;
+  --secondary-foreground: #e8e0d8;
+  --muted: #2d2d4a;
+  --muted-foreground: #a89888;
+  --accent: #4da6f0;
+  --accent-foreground: #1a1a2e;
+  --border: #4a4a6a;
+  --ring: #e89b5f;
 }
 
 * {
@@ -135,9 +154,18 @@ body {
 
 /* 배경 패턴 */
 .bg-pattern {
+  background-color: var(--background);
   background-image: 
     radial-gradient(circle at 25% 25%, rgba(213, 128, 74, 0.05) 0%, transparent 50%),
     radial-gradient(circle at 75% 75%, rgba(14, 142, 233, 0.05) 0%, transparent 50%);
+}
+
+.dark .bg-pattern,
+.dark.bg-pattern {
+  background-color: var(--background);
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(232, 155, 95, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(77, 166, 240, 0.08) 0%, transparent 50%);
 }
 
 /* 글래스모피즘 효과 */
@@ -145,5 +173,10 @@ body {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+  background: rgba(37, 37, 66, 0.8);
+  border: 1px solid rgba(74, 74, 106, 0.5);
 }
 

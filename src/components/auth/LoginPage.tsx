@@ -41,7 +41,7 @@ export function LoginPage() {
             SUMMIT
           </h1>
           <p className="text-summit-600 text-lg">
-            매일의 말씀과 함께하는 영적 성장 일기
+            3집중 속에 찾는 나의 망대 여정 이정표
           </p>
         </div>
 
@@ -50,17 +50,17 @@ export function LoginPage() {
           <FeatureItem 
             icon={<BookOpen className="w-5 h-5" />}
             title="오늘의 말씀"
-            description="매일 새로운 기도수첩과 함께"
+            description="매일 말씀속에서 하나님의 망대를"
           />
           <FeatureItem 
             icon={<Heart className="w-5 h-5" />}
-            title="영적 일기"
-            description="하루를 돌아보며 기록하기"
+            title="오늘의 기도"
+            description="나의 하루가 하나님과 함께하는 여정으로"
           />
           <FeatureItem 
             icon={<Sparkles className="w-5 h-5" />}
-            title="기도 응답"
-            description="응답받은 기도를 기억하기"
+            title="오늘의 전도"
+            description="나의 삶이 하나님의 이정표를 따라"
           />
         </div>
 

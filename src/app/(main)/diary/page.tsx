@@ -32,7 +32,7 @@ export default function DiaryPage() {
     
     setLoading(true);
     try {
-      // 오늘의 일기 로드
+      // 오늘의 3집중 로드
       const entryRef = doc(db, "users", user.uid, "entries", today);
       const entrySnap = await getDoc(entryRef);
       
@@ -139,7 +139,7 @@ export default function DiaryPage() {
       {/* 헤더 */}
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-summit-900">오늘의 일기</h1>
+          <h1 className="text-2xl font-bold text-summit-900 dark:text-foreground">오늘의 3집중</h1>
           <p className="text-summit-600 flex items-center gap-2 mt-1">
             <Calendar className="w-4 h-4" />
             {formatDate(today, "yyyy년 M월 d일 EEEE")}
@@ -160,14 +160,23 @@ export default function DiaryPage() {
       </header>
 
       {/* 오늘의 말씀 */}
-      <TodaysDevotion devotion={devotion} />
+      <TodaysDevotion 
+        devotion={devotion} 
+        messageNotes={entry?.messageNotes || ""}
+        onSaveNotes={async (notes) => {
+          if (entry) {
+            await saveEntry({ messageNotes: notes });
+          }
+        }}
+      />
 
       {/* 일기 작성 */}
-      {entry && (
+      {entry && user && (
         <DiaryEditor 
           entry={entry} 
           onSave={saveEntry}
           saving={saving}
+          userId={user.uid}
         />
       )}
     </div>

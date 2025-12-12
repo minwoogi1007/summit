@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 배경 -->
+  <rect width="512" height="512" rx="64" fill="#d5804a"/>
+  
+  <!-- 산 모양 -->
+  <path d="M256 120 L400 340 L320 340 L280 280 L240 340 L160 340 L256 180 L180 340 L112 340 L256 120Z" fill="#fdf8f3"/>
+  
+  <!-- 하단 땅 -->
+  <rect x="80" y="340" width="352" height="52" rx="8" fill="#fdf8f3" opacity="0.9"/>
+  
+  <!-- 십자가 (정상) -->
+  <rect x="248" y="100" width="16" height="50" rx="4" fill="#fff"/>
+  <rect x="232" y="116" width="48" height="12" rx="4" fill="#fff"/>
+  
+  <!-- 텍스트 -->
+  <text x="256" y="430" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="64" font-weight="bold" fill="#fdf8f3">
+    SUMMIT
+  </text>
+</svg>
+

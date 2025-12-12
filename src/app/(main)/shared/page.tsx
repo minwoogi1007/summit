@@ -57,7 +57,7 @@ export default function SharedPage() {
         if (activeTab === "public") {
           entriesQuery = query(
             entriesRef,
-            where("isPublic", "==", true),
+            where("isShared", "==", true),
             orderBy("date", "desc")
           );
         } else {

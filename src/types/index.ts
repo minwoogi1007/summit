@@ -8,21 +8,32 @@ export interface User {
   createdAt: Date;
 }
 
+// 일기 첨부 이미지 타입
+export interface DiaryImage {
+  id: string;
+  url: string;
+  thumbnailUrl?: string;
+  fileName: string;
+  uploadedAt: Date;
+}
+
 // 일기 항목 타입
 export interface DiaryEntry {
   id: string;
   userId: string;
   date: string; // YYYY-MM-DD 형식
   
-  // 핵심 필드
-  dailyEvents: string;      // 오늘 있었던 일
-  myHeart: string;          // 내 마음
-  prayerResponse: string;   // 응답
+  // 핵심 필드 (3집중)
+  dailyEvents: string;      // 오늘의 말씀 (망대)
+  myHeart: string;          // 오늘의 기도 (여정)
+  prayerResponse: string;   // 오늘의 전도 (이정표)
   
   // 확장 필드
   customFields?: CustomField[];
   mood?: MoodType;
   isBookmarked: boolean;
+  images?: DiaryImage[];    // 첨부 이미지
+  messageNotes?: string;    // 메시지 메모
   
   // 공유 설정
   isShared: boolean;
@@ -113,12 +124,27 @@ export interface SharedEntry {
   sharedAt: Date;
 }
 
+// 캘린더 개인 일정 타입
+export interface CalendarEvent {
+  id: string;
+  userId: string;
+  title: string;
+  date: string;           // YYYY-MM-DD 형식
+  time?: string;          // HH:mm 형식 (선택)
+  description?: string;
+  color?: string;         // 색상 코드
+  isAllDay: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // 캘린더 마커 타입
 export interface CalendarMarker {
   date: string;
   hasEntry: boolean;
   hasDevotion: boolean;
   mood?: MoodType;
+  events?: CalendarEvent[];
 }
 
 // API 응답 타입

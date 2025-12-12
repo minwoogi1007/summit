@@ -171,7 +171,7 @@ export default function DiaryDatePage() {
 
           <div className="text-center">
             <h1 className="text-2xl font-bold text-summit-900">
-              {isToday ? "오늘의 일기" : formatDate(dateStr, "M월 d일의 일기")}
+              {isToday ? "오늘의 3집중" : formatDate(dateStr, "M월 d일의 3집중")}
             </h1>
             <p className="text-summit-600 flex items-center justify-center gap-2 mt-1">
               <Calendar className="w-4 h-4" />
@@ -205,11 +205,12 @@ export default function DiaryDatePage() {
       <TodaysDevotion devotion={devotion} />
 
       {/* 일기 작성 */}
-      {entry && (
+      {entry && user && (
         <DiaryEditor 
           entry={entry} 
           onSave={saveEntry}
           saving={saving}
+          userId={user.uid}
         />
       )}
     </div>

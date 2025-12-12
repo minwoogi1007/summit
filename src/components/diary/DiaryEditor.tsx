@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { DiaryEntry, CustomField, MoodType, MOOD_LABELS } from "@/types";
+import { DiaryEntry, DiaryImage, CustomField, MoodType, MOOD_LABELS } from "@/types";
 import { cn, debounce } from "@/lib/utils";
+import { ImageUploader } from "./ImageUploader";
 import { 
   Pencil, 
   Heart, 
@@ -22,9 +23,10 @@ interface DiaryEditorProps {
   entry: DiaryEntry;
   onSave: (entry: Partial<DiaryEntry>) => Promise<void>;
   saving?: boolean;
+  userId: string;
 }
 
-export function DiaryEditor({ entry, onSave, saving = false }: DiaryEditorProps) {
+export function DiaryEditor({ entry, onSave, saving = false, userId }: DiaryEditorProps) {
   const [localEntry, setLocalEntry] = useState(entry);
   const [expandedSections, setExpandedSections] = useState({
     dailyEvents: true,
@@ -89,6 +91,11 @@ export function DiaryEditor({ entry, onSave, saving = false }: DiaryEditorProps)
     setShowMoodPicker(false);
   };
 
+  // 이미지 변경 핸들러
+  const handleImagesChange = (images: DiaryImage[]) => {
+    updateField("images", images);
+  };
+
   // 수동 저장
   const handleManualSave = async () => {
     await onSave({
@@ -99,6 +106,7 @@ export function DiaryEditor({ entry, onSave, saving = false }: DiaryEditorProps)
       mood: localEntry.mood,
       isBookmarked: localEntry.isBookmarked,
       isShared: localEntry.isShared,
+      images: localEntry.images,
     });
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 2000);
@@ -186,9 +194,9 @@ export function DiaryEditor({ entry, onSave, saving = false }: DiaryEditorProps)
         </div>
       </div>
 
-      {/* 오늘 있었던 일 */}
+      {/* 오늘의 말씀 - 망대 */}
       <DiarySection
-        title="오늘 있었던 일"
+        title="오늘의 말씀"
         icon={<Pencil className="w-4 h-4" />}
         expanded={expandedSections.dailyEvents}
         onToggle={() => toggleSection("dailyEvents")}
@@ -196,14 +204,14 @@ export function DiaryEditor({ entry, onSave, saving = false }: DiaryEditorProps)
         <textarea
           value={localEntry.dailyEvents}
           onChange={(e) => updateField("dailyEvents", e.target.value)}
-          placeholder="오늘 하루 어떤 일이 있었나요?"
+          placeholder="매일 말씀속에서 하나님의 망대를 찾아보세요..."
           className="diary-input w-full min-h-[120px] p-4 bg-transparent border-0 resize-none focus:outline-none focus:ring-0"
         />
       </DiarySection>
 
-      {/* 내 마음 */}
+      {/* 오늘의 기도 - 여정 */}
       <DiarySection
-        title="내 마음"
+        title="오늘의 기도"
         icon={<Heart className="w-4 h-4" />}
         expanded={expandedSections.myHeart}
         onToggle={() => toggleSection("myHeart")}
@@ -212,14 +220,14 @@ export function DiaryEditor({ entry, onSave, saving = false }: DiaryEditorProps)
         <textarea
           value={localEntry.myHeart}
           onChange={(e) => updateField("myHeart", e.target.value)}
-          placeholder="오늘 느낀 감정과 생각을 적어보세요..."
+          placeholder="나의 하루가 하나님과 함께하는 여정으로..."
           className="diary-input w-full min-h-[120px] p-4 bg-transparent border-0 resize-none focus:outline-none focus:ring-0"
         />
       </DiarySection>
 
-      {/* 응답 */}
+      {/* 오늘의 전도 - 이정표 */}
       <DiarySection
-        title="응답"
+        title="오늘의 전도"
         icon={<MessageCircle className="w-4 h-4" />}
         expanded={expandedSections.prayerResponse}
         onToggle={() => toggleSection("prayerResponse")}
@@ -228,7 +236,7 @@ export function DiaryEditor({ entry, onSave, saving = false }: DiaryEditorProps)
         <textarea
           value={localEntry.prayerResponse}
           onChange={(e) => updateField("prayerResponse", e.target.value)}
-          placeholder="기도 응답이나 하나님께서 주신 메시지가 있나요?"
+          placeholder="나의 삶이 하나님의 이정표를 따라..."
           className="diary-input w-full min-h-[120px] p-4 bg-transparent border-0 resize-none focus:outline-none focus:ring-0"
         />
       </DiarySection>
@@ -275,10 +283,22 @@ export function DiaryEditor({ entry, onSave, saving = false }: DiaryEditorProps)
         </DiarySection>
       )}
 
+      {/* 사진 첨부 */}
+      <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-summit-100 dark:border-border p-4">
+        <ImageUploader
+          userId={userId}
+          date={entry.date}
+          images={localEntry.images || []}
+          onImagesChange={handleImagesChange}
+          maxImages={5}
+          disabled={saving}
+        />
+      </div>
+
       {/* 필드 추가 버튼 */}
       <button
         onClick={addCustomField}
-        className="w-full py-4 border-2 border-dashed border-summit-200 rounded-xl text-summit-500 hover:border-summit-400 hover:text-summit-600 hover:bg-summit-50 transition-all flex items-center justify-center gap-2"
+        className="w-full py-4 border-2 border-dashed border-summit-200 dark:border-border rounded-xl text-summit-500 dark:text-muted-foreground hover:border-summit-400 dark:hover:border-muted-foreground hover:text-summit-600 dark:hover:text-foreground hover:bg-summit-50 dark:hover:bg-muted transition-all flex items-center justify-center gap-2"
       >
         <Plus className="w-5 h-5" />
         <span>항목 추가</span>

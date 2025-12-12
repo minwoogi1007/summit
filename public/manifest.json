@@ -1,27 +1,49 @@
 {
   "name": "SUMMIT - 영적 일기",
   "short_name": "SUMMIT",
-  "description": "매일의 말씀과 함께하는 영적 성장 일기",
+  "description": "3집중 속에 찾는 나의 망대 여정 이정표",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fdf8f3",
   "theme_color": "#d5804a",
   "orientation": "portrait",
+  "scope": "/",
+  "id": "/",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "categories": ["lifestyle", "productivity"],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-narrow.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "categories": ["lifestyle", "productivity", "religion"],
   "lang": "ko",
   "dir": "ltr"
 }
