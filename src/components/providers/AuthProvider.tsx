@@ -3,7 +3,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { 
   onAuthStateChanged, 
-  signInWithPopup, 
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   User as FirebaseUser 
 } from "firebase/auth";
@@ -31,6 +33,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [encryptionKey, setEncryptionKey] = useState<string | null>(null);
 
   useEffect(() => {
+    // Redirect 결과 처리 (모바일 로그인 후)
+    getRedirectResult(auth).catch((error) => {
+      console.error("Redirect 결과 처리 실패:", error);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const { userData, key } = await getOrCreateUser(firebaseUser);
@@ -112,10 +119,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  // Google 로그인
+  // Google 로그인 (모바일 대응)
   const signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      // 모바일 또는 WebView 감지
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const isWebView = /FBAN|FBAV|Instagram|Line|KAKAOTALK/i.test(navigator.userAgent);
+      
+      if (isMobile || isWebView) {
+        // 모바일/WebView에서는 redirect 방식 사용
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        // 데스크탑에서는 popup 방식 사용
+        await signInWithPopup(auth, googleProvider);
+      }
     } catch (error) {
       console.error("Google 로그인 실패:", error);
       throw error;
