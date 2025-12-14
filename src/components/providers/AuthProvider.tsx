@@ -119,19 +119,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  // Google 로그인 (모바일 대응)
+  // Google 로그인 (PWA standalone 모드 대응)
   const signInWithGoogle = async () => {
     try {
+      // PWA standalone 모드 감지
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+        || (window.navigator as { standalone?: boolean }).standalone === true
+        || document.referrer.includes('android-app://');
+      
       // 모바일 또는 WebView 감지
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       const isWebView = /FBAN|FBAV|Instagram|Line|KAKAOTALK/i.test(navigator.userAgent);
+      
+      // PWA standalone 모드에서는 새 창으로 열기 (팝업/리다이렉트 모두 문제)
+      if (isStandalone) {
+        // PWA에서는 시스템 브라우저로 로그인 페이지 열기
+        // redirect 방식 사용 - 인증 후 PWA로 돌아옴
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
       
       if (isMobile || isWebView) {
         // 모바일/WebView에서는 redirect 방식 사용
         await signInWithRedirect(auth, googleProvider);
       } else {
         // 데스크탑에서는 popup 방식 사용
-        await signInWithPopup(auth, googleProvider);
+        try {
+          await signInWithPopup(auth, googleProvider);
+        } catch (popupError: unknown) {
+          // 팝업이 차단된 경우 redirect로 폴백
+          if ((popupError as { code?: string })?.code === 'auth/popup-blocked') {
+            await signInWithRedirect(auth, googleProvider);
+          } else {
+            throw popupError;
+          }
+        }
       }
     } catch (error) {
       console.error("Google 로그인 실패:", error);
