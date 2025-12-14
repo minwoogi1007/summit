@@ -3,7 +3,7 @@
   "short_name": "SUMMIT",
   "description": "3집중 속에 찾는 나의 망대 여정 이정표",
   "start_url": "/",
-  "display": "standalone",
+  "display": "minimal-ui",
   "background_color": "#fdf8f3",
   "theme_color": "#d5804a",
   "orientation": "portrait",
