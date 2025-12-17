@@ -4,7 +4,7 @@ import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "SUMMIT - 영적 일기",
+  title: "SUMMIT - 3집중",
   description: "3집중 속에 찾는 나의 망대 여정 이정표",
   manifest: "/manifest.json",
   appleWebApp: {

@@ -3,7 +3,7 @@
 ## 📅 2025-12-12 (금) - 프로젝트 생성 및 초기 개발
 
 ### 🎯 프로젝트 개요
-- **프로젝트명**: SUMMIT - 영적 일기 앱
+- **프로젝트명**: SUMMIT - 3집중 앱
 - **기술 스택**: Next.js 14, TypeScript, Tailwind CSS, Firebase
 - **배포**: Vercel
 - **저장소**: https://github.com/minwoogi1007/summit

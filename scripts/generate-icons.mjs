@@ -44,8 +44,8 @@ async function generateIcons() {
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
   <rect width="1280" height="720" fill="#fdf8f3"/>
   <rect x="20" y="20" width="1240" height="680" rx="20" fill="#d5804a" opacity="0.1"/>
-  <text x="640" y="360" text-anchor="middle" font-family="Arial" font-size="48" fill="#d5804a">SUMMIT - 영적 일기</text>
-  <text x="640" y="420" text-anchor="middle" font-family="Arial" font-size="24" fill="#888">매일의 말씀과 함께하는 영적 성장</text>
+  <text x="640" y="360" text-anchor="middle" font-family="Arial" font-size="48" fill="#d5804a">SUMMIT - 3집중</text>
+  <text x="640" y="420" text-anchor="middle" font-family="Arial" font-size="24" fill="#888">3집중 속에 찾는 나의 망대 여정</text>
 </svg>
 `;
 
@@ -61,7 +61,7 @@ async function generateIcons() {
   <rect width="720" height="1280" fill="#fdf8f3"/>
   <rect x="20" y="20" width="680" height="1240" rx="20" fill="#d5804a" opacity="0.1"/>
   <text x="360" y="600" text-anchor="middle" font-family="Arial" font-size="48" fill="#d5804a">SUMMIT</text>
-  <text x="360" y="660" text-anchor="middle" font-family="Arial" font-size="24" fill="#888">영적 일기</text>
+  <text x="360" y="660" text-anchor="middle" font-family="Arial" font-size="24" fill="#888">3집중</text>
 </svg>
 `;
 
