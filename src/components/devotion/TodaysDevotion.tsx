@@ -373,11 +373,12 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
 
               <div className={cn(
                 "grid gap-0",
+                // 모바일: 항상 세로, PC: 크기에 따라 분할
                 videoSize === 'small' && "grid-cols-1 md:grid-cols-3",
                 videoSize === 'medium' && "grid-cols-1 md:grid-cols-2",
                 videoSize === 'large' && "grid-cols-1"
               )}>
-                {/* 비디오 영역 */}
+                {/* 비디오 영역 - 모바일에서 높이 조절 */}
                 <div className={cn(
                   "relative",
                   videoSize === 'small' && "md:col-span-1",
@@ -385,10 +386,13 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
                   videoSize === 'large' && "col-span-1"
                 )}>
                   <div className={cn(
-                    "youtube-container",
-                    videoSize === 'large' && "max-h-[70vh]"
+                    "relative w-full overflow-hidden",
+                    // 모바일: 높이 조절, PC: 16:9 비율
+                    videoSize === 'small' && "h-[30vh] md:h-auto md:aspect-video",
+                    videoSize === 'medium' && "h-[45vh] md:h-auto md:aspect-video",
+                    videoSize === 'large' && "h-[65vh] md:h-auto md:aspect-video"
                   )}>
-                    <div id="youtube-player" />
+                    <div id="youtube-player" className="absolute inset-0 w-full h-full" />
                   </div>
                 </div>
 
