@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Devotion } from "@/types";
 import { extractYoutubeVideoId, cn, debounce } from "@/lib/utils";
 import { 
@@ -16,6 +16,35 @@ import {
   Save
 } from "lucide-react";
 
+// YouTube IFrame API 타입
+declare global {
+  interface Window {
+    YT: {
+      Player: new (elementId: string, options: {
+        videoId: string;
+        playerVars?: Record<string, number | string>;
+        events?: {
+          onReady?: (event: { target: YTPlayer }) => void;
+          onStateChange?: (event: { data: number }) => void;
+        };
+      }) => YTPlayer;
+      PlayerState: {
+        PLAYING: number;
+        PAUSED: number;
+        ENDED: number;
+      };
+    };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
+interface YTPlayer {
+  getCurrentTime: () => number;
+  playVideo: () => void;
+  pauseVideo: () => void;
+  destroy: () => void;
+}
+
 interface TodaysDevotionProps {
   devotion: Devotion | null;
   messageNotes?: string;
@@ -29,6 +58,61 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
   const [notes, setNotes] = useState(messageNotes);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const playerRef = useRef<YTPlayer | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [playerReady, setPlayerReady] = useState(false);
+
+  const youtubeVideoId = devotion?.youtubeLink 
+    ? extractYoutubeVideoId(devotion.youtubeLink) 
+    : null;
+
+  // YouTube IFrame API 로드 및 플레이어 초기화
+  useEffect(() => {
+    if (!showVideoWithNotes || !youtubeVideoId) return;
+
+    // YouTube IFrame API 스크립트 로드
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+      window.onYouTubeIframeAPIReady = () => {
+        initPlayer();
+      };
+    } else {
+      initPlayer();
+    }
+
+    function initPlayer() {
+      // 기존 플레이어 제거
+      if (playerRef.current) {
+        playerRef.current.destroy();
+      }
+
+      playerRef.current = new window.YT.Player('youtube-player', {
+        videoId: youtubeVideoId!,
+        playerVars: {
+          autoplay: 0,
+          modestbranding: 1,
+          rel: 0,
+        },
+        events: {
+          onReady: () => {
+            setPlayerReady(true);
+          },
+        },
+      });
+    }
+
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.destroy();
+        playerRef.current = null;
+      }
+      setPlayerReady(false);
+    };
+  }, [showVideoWithNotes, youtubeVideoId]);
 
   // 디바운스된 저장
   const debouncedSave = useCallback(
@@ -60,10 +144,6 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
     );
   }
 
-  const youtubeVideoId = devotion.youtubeLink 
-    ? extractYoutubeVideoId(devotion.youtubeLink) 
-    : null;
-
   const copyVerse = async () => {
     const textToCopy = `${devotion.bibleVerse}\n${devotion.bibleText || ""}`;
     await navigator.clipboard.writeText(textToCopy);
@@ -76,12 +156,55 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
     debouncedSave(text);
   };
 
+  // 영상 재생 시간을 MM:SS 형식으로 변환
+  const formatVideoTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // 타임스탬프 추가 (영상 재생 시간 사용)
   const addTimestamp = () => {
-    const now = new Date();
-    const timestamp = `[${now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}]`;
-    const newNotes = notes ? `${notes}\n${timestamp} ` : `${timestamp} `;
-    setNotes(newNotes);
-    debouncedSave(newNotes);
+    let timestamp = '';
+    
+    // YouTube 플레이어에서 현재 재생 시간 가져오기
+    if (playerRef.current && playerReady) {
+      try {
+        const currentTime = playerRef.current.getCurrentTime();
+        timestamp = `[${formatVideoTime(currentTime)}]`;
+      } catch {
+        // 플레이어 오류 시 현재 시간 사용
+        const now = new Date();
+        timestamp = `[${now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}]`;
+      }
+    } else {
+      // 플레이어가 없으면 현재 시간 사용
+      const now = new Date();
+      timestamp = `[${now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}]`;
+    }
+    
+    // 커서 위치에 타임스탬프 삽입
+    if (textareaRef.current) {
+      const cursorPos = textareaRef.current.selectionStart;
+      const textBefore = notes.substring(0, cursorPos);
+      const textAfter = notes.substring(cursorPos);
+      const newNotes = `${textBefore}\n${timestamp} `;
+      setNotes(newNotes + textAfter);
+      debouncedSave(newNotes + textAfter);
+      
+      // 커서 위치 조정
+      setTimeout(() => {
+        if (textareaRef.current) {
+          const newPos = newNotes.length;
+          textareaRef.current.setSelectionRange(newPos, newPos);
+          textareaRef.current.focus();
+        }
+      }, 0);
+    } else {
+      const newNotes = notes ? `${notes}\n${timestamp} ` : `${timestamp} `;
+      setNotes(newNotes);
+      debouncedSave(newNotes);
+    }
   };
 
   const handleManualSave = async () => {
@@ -199,21 +322,16 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
           {/* 영상 + 메모 분할 화면 */}
           {showVideoWithNotes && youtubeVideoId && (
             <div className="bg-white dark:bg-card rounded-xl border border-summit-100 dark:border-border overflow-hidden animate-scale-in">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
                 {/* 비디오 영역 */}
                 <div className="relative">
                   <div className="youtube-container">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${youtubeVideoId}?enablejsapi=1`}
-                      title="YouTube video player"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+                    <div id="youtube-player" />
                   </div>
                 </div>
 
                 {/* 메모 영역 */}
-                <div className="flex flex-col border-l-0 lg:border-l border-summit-100 dark:border-border">
+                <div className="flex flex-col border-l-0 md:border-l border-summit-100 dark:border-border">
                   {/* 메모 헤더 */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-summit-100 dark:border-border bg-summit-50 dark:bg-muted">
                     <h3 className="font-medium text-summit-800 dark:text-foreground flex items-center gap-2">
@@ -239,12 +357,13 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
                   {/* 메모 입력 */}
                   <div className="flex-1 p-4">
                     <textarea
+                      ref={textareaRef}
                       value={notes}
                       onChange={(e) => handleNotesChange(e.target.value)}
                       placeholder={`메시지를 들으면서 메모하세요...
 
 💡 팁:
-• '시간' 버튼으로 타임스탬프 추가
+• '시간' 버튼으로 영상 타임스탬프 추가
 • 자동 저장됩니다`}
                       className="w-full h-48 p-3 bg-summit-50 dark:bg-muted rounded-xl border-0 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-summit-800 dark:text-foreground placeholder:text-summit-400 dark:placeholder:text-muted-foreground font-diary text-base leading-relaxed"
                     />
