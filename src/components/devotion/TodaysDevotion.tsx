@@ -13,8 +13,13 @@ import {
   Check,
   Pencil,
   Clock,
-  Save
+  Save,
+  Minimize2,
+  Maximize2,
+  Square
 } from "lucide-react";
+
+type VideoSize = 'small' | 'medium' | 'large' | 'full';
 
 // YouTube IFrame API 타입
 declare global {
@@ -58,6 +63,7 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
   const [notes, setNotes] = useState(messageNotes);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [videoSize, setVideoSize] = useState<VideoSize>('medium');
   const playerRef = useRef<YTPlayer | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [playerReady, setPlayerReady] = useState(false);
@@ -322,16 +328,77 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
           {/* 영상 + 메모 분할 화면 */}
           {showVideoWithNotes && youtubeVideoId && (
             <div className="bg-white dark:bg-card rounded-xl border border-summit-100 dark:border-border overflow-hidden animate-scale-in">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+              {/* 영상 크기 조절 버튼 */}
+              <div className="flex items-center justify-between px-4 py-2 border-b border-summit-100 dark:border-border bg-summit-50/50 dark:bg-muted/50">
+                <span className="text-xs text-summit-500 dark:text-muted-foreground">영상 크기</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setVideoSize('small')}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-colors",
+                      videoSize === 'small' 
+                        ? "bg-primary text-white" 
+                        : "text-summit-500 hover:bg-summit-100 dark:hover:bg-muted"
+                    )}
+                    title="작게"
+                  >
+                    <Minimize2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setVideoSize('medium')}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-colors",
+                      videoSize === 'medium' 
+                        ? "bg-primary text-white" 
+                        : "text-summit-500 hover:bg-summit-100 dark:hover:bg-muted"
+                    )}
+                    title="중간"
+                  >
+                    <Square className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setVideoSize('large')}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-colors",
+                      videoSize === 'large' 
+                        ? "bg-primary text-white" 
+                        : "text-summit-500 hover:bg-summit-100 dark:hover:bg-muted"
+                    )}
+                    title="크게"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className={cn(
+                "grid gap-0",
+                videoSize === 'small' && "grid-cols-1 md:grid-cols-3",
+                videoSize === 'medium' && "grid-cols-1 md:grid-cols-2",
+                videoSize === 'large' && "grid-cols-1"
+              )}>
                 {/* 비디오 영역 */}
-                <div className="relative">
-                  <div className="youtube-container">
+                <div className={cn(
+                  "relative",
+                  videoSize === 'small' && "md:col-span-1",
+                  videoSize === 'medium' && "md:col-span-1",
+                  videoSize === 'large' && "col-span-1"
+                )}>
+                  <div className={cn(
+                    "youtube-container",
+                    videoSize === 'large' && "max-h-[70vh]"
+                  )}>
                     <div id="youtube-player" />
                   </div>
                 </div>
 
                 {/* 메모 영역 */}
-                <div className="flex flex-col border-l-0 md:border-l border-summit-100 dark:border-border">
+                <div className={cn(
+                  "flex flex-col border-t md:border-t-0 md:border-l border-summit-100 dark:border-border",
+                  videoSize === 'small' && "md:col-span-2",
+                  videoSize === 'medium' && "md:col-span-1",
+                  videoSize === 'large' && "col-span-1"
+                )}>
                   {/* 메모 헤더 */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-summit-100 dark:border-border bg-summit-50 dark:bg-muted">
                     <h3 className="font-medium text-summit-800 dark:text-foreground flex items-center gap-2">
@@ -365,7 +432,10 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
 💡 팁:
 • '시간' 버튼으로 영상 타임스탬프 추가
 • 자동 저장됩니다`}
-                      className="w-full h-48 p-3 bg-summit-50 dark:bg-muted rounded-xl border-0 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-summit-800 dark:text-foreground placeholder:text-summit-400 dark:placeholder:text-muted-foreground font-diary text-base leading-relaxed"
+                      className={cn(
+                        "w-full p-3 bg-summit-50 dark:bg-muted rounded-xl border-0 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-summit-800 dark:text-foreground placeholder:text-summit-400 dark:placeholder:text-muted-foreground font-diary text-base leading-relaxed",
+                        videoSize === 'large' ? "h-32" : "h-48"
+                      )}
                     />
                   </div>
 
