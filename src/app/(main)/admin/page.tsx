@@ -19,7 +19,9 @@ import {
   BookOpen,
   PenLine,
   TrendingUp,
-  Clock
+  Clock,
+  Clipboard,
+  Wand2
 } from "lucide-react";
 import { 
   doc, 
@@ -71,13 +73,138 @@ const emptyDevotionForm = (): DevotionForm => ({
   youtubeLink: "",
 });
 
+// 텍스트 파싱 함수 (기도수첩 형식 자동 인식)
+function parseDevotionText(text: string): DevotionForm {
+  const lines = text.split('\n').map(line => line.trim());
+  const form = emptyDevotionForm();
+  
+  let currentSection = '';
+  let contentLines: string[] = [];
+  let prayerLines: string[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // 날짜 파싱: "2025년 12월 17일 수요일"
+    const dateMatch = line.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+    if (dateMatch) {
+      const [, year, month, day] = dateMatch;
+      form.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      
+      // 날짜 다음 줄이 제목일 가능성
+      if (i + 1 < lines.length && lines[i + 1] && !lines[i + 1].match(/^(창세기|출애굽기|레위기|민수기|신명기|여호수아|사사기|룻기|사무엘|열왕기|역대|에스라|느헤미야|에스더|욥기|시편|잠언|전도서|아가|이사야|예레미야|애가|에스겔|다니엘|호세아|요엘|아모스|오바댜|요나|미가|나훔|하박국|스바냐|학개|스가랴|말라기|마태복음|마가복음|누가복음|요한복음|사도행전|로마서|고린도전서|고린도후서|갈라디아서|에베소서|빌립보서|골로새서|데살로니가전서|데살로니가후서|디모데전서|디모데후서|디도서|빌레몬서|히브리서|야고보서|베드로전서|베드로후서|요한일서|요한이서|요한삼서|유다서|요한계시록)/)) {
+        const nextLine = lines[i + 1];
+        if (nextLine && !nextLine.startsWith('♬') && !nextLine.startsWith('[') && !nextLine.includes('http')) {
+          form.title = nextLine;
+        }
+      }
+      continue;
+    }
+    
+    // 성경 구절 파싱: "창세기 3:15 / 내가 너로..."
+    const bibleMatch = line.match(/^(창세기|출애굽기|레위기|민수기|신명기|여호수아|사사기|룻기|사무엘|열왕기|역대|에스라|느헤미야|에스더|욥기|시편|잠언|전도서|아가|이사야|예레미야|애가|에스겔|다니엘|호세아|요엘|아모스|오바댜|요나|미가|나훔|하박국|스바냐|학개|스가랴|말라기|마태복음|마가복음|누가복음|요한복음|사도행전|로마서|고린도전서|고린도후서|갈라디아서|에베소서|빌립보서|골로새서|데살로니가전서|데살로니가후서|디모데전서|디모데후서|디도서|빌레몬서|히브리서|야고보서|베드로전서|베드로후서|요한일서|요한이서|요한삼서|유다서|요한계시록)\s*(\d+:\d+(?:-\d+)?)\s*[\/|]\s*(.+)/);
+    if (bibleMatch) {
+      const [, book, verse, text] = bibleMatch;
+      form.bibleVerse = `${book} ${verse}`;
+      form.bibleText = text;
+      continue;
+    }
+    
+    // 외부 링크 (Evernote 등)
+    if (line === '[문서 보기]' || line.includes('문서 보기')) {
+      if (i + 1 < lines.length && lines[i + 1].includes('http')) {
+        form.externalLink = lines[i + 1];
+      }
+      continue;
+    }
+    
+    // 유튜브 링크
+    if (line === '[동영상 보기]' || line.includes('동영상 보기')) {
+      if (i + 1 < lines.length && lines[i + 1].includes('http')) {
+        form.youtubeLink = lines[i + 1];
+      }
+      continue;
+    }
+    
+    // youtu.be 또는 youtube.com URL 직접 감지
+    if (line.includes('youtu.be') || line.includes('youtube.com')) {
+      form.youtubeLink = line;
+      continue;
+    }
+    
+    // evernote URL 직접 감지
+    if (line.includes('evernote.com') || line.includes('share.evernote')) {
+      form.externalLink = line;
+      continue;
+    }
+    
+    // 언약 기도 섹션
+    if (line.includes('<언약 기도>') || line.includes('언약 기도')) {
+      currentSection = 'prayer';
+      const afterMarker = line.replace(/<언약 기도>|언약 기도/, '').trim();
+      if (afterMarker) prayerLines.push(afterMarker);
+      continue;
+    }
+    
+    // 성구암송, 성경읽기는 기도제목으로
+    if (line.startsWith('[성구암송]')) {
+      const verse = line.replace('[성구암송]', '').trim();
+      if (verse) form.prayerPoints.push(`성구암송: ${verse}`);
+      continue;
+    }
+    
+    if (line.startsWith('[성경읽기]')) {
+      const reading = line.replace('[성경읽기]', '').trim();
+      if (reading) form.prayerPoints.push(`성경읽기: ${reading}`);
+      continue;
+    }
+    
+    // 찬송가는 스킵
+    if (line.startsWith('♬')) continue;
+    
+    // 핵심훈련 날짜 등 스킵
+    if (line.match(/^\d{4}\.\d{2}\.\d{2}/)) continue;
+    
+    // 빈 줄이면 스킵
+    if (!line) continue;
+    
+    // 섹션에 따라 내용 추가
+    if (currentSection === 'prayer') {
+      prayerLines.push(line);
+    } else if (form.youtubeLink || form.externalLink) {
+      // 링크 이후의 내용은 본문
+      contentLines.push(line);
+    }
+  }
+  
+  // 본문 조합
+  form.content = contentLines.join('\n\n');
+  
+  // 기도제목 조합
+  if (prayerLines.length > 0) {
+    form.prayerPoints = [...form.prayerPoints.filter(p => p), prayerLines.join(' ')];
+  }
+  
+  // 빈 기도제목 제거 후 최소 1개 보장
+  form.prayerPoints = form.prayerPoints.filter(p => p.trim());
+  if (form.prayerPoints.length === 0) {
+    form.prayerPoints = [''];
+  }
+  
+  return form;
+}
+
 export default function AdminPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "register" | "list">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "quick" | "register" | "list">("dashboard");
   const [form, setForm] = useState<DevotionForm>(emptyDevotionForm());
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  
+  // 빠른 등록 상태
+  const [rawText, setRawText] = useState("");
+  const [isParsed, setIsParsed] = useState(false);
   
   // 대시보드 상태
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -373,6 +500,18 @@ export default function AdminPage() {
           대시보드
         </button>
         <button
+          onClick={() => setActiveTab("quick")}
+          className={cn(
+            "flex items-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
+            activeTab === "quick"
+              ? "bg-white dark:bg-card text-summit-800 dark:text-foreground shadow-sm"
+              : "text-summit-600 dark:text-muted-foreground hover:text-summit-800 dark:hover:text-foreground"
+          )}
+        >
+          <Wand2 className="w-4 h-4" />
+          빠른 등록
+        </button>
+        <button
           onClick={() => setActiveTab("register")}
           className={cn(
             "flex items-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
@@ -382,7 +521,7 @@ export default function AdminPage() {
           )}
         >
           <Plus className="w-4 h-4" />
-          등록
+          수동 등록
         </button>
         <button
           onClick={() => setActiveTab("list")}
@@ -518,7 +657,234 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 등록 폼 */}
+      {/* 빠른 등록 (텍스트 붙여넣기) */}
+      {activeTab === "quick" && (
+        <div className="space-y-4">
+          {!isParsed ? (
+            // Step 1: 텍스트 붙여넣기
+            <div className="bg-white dark:bg-card rounded-xl p-6 border border-summit-100 dark:border-border space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Clipboard className="w-5 h-5 text-spirit-600" />
+                <h2 className="font-bold text-summit-800 dark:text-foreground">기도수첩 텍스트 붙여넣기</h2>
+              </div>
+              
+              <p className="text-sm text-summit-600 dark:text-muted-foreground">
+                기도수첩 전체 내용을 복사해서 아래에 붙여넣으세요. <br />
+                날짜, 제목, 성경 구절, 링크 등이 자동으로 분리됩니다.
+              </p>
+              
+              <textarea
+                value={rawText}
+                onChange={(e) => setRawText(e.target.value)}
+                placeholder={`예시:
+2025년 12월 17일 수요일
+시작이 틀리면 모든 것이 실패
+
+창세기 3:15 / 내가 너로 여자와 원수가 되게 하고...
+
+♬ 찬송가 349장 나는 예수 따라가는
+
+[문서 보기]
+https://share.evernote.com/note/...
+
+[동영상 보기]
+https://youtu.be/...
+
+우리는 새로운 시작을 해야 합니다...
+
+<언약 기도> 
+하나님께 감사드립니다...
+
+[성구암송] 히브리서 11:1  
+[성경읽기] 시편 48:1-14`}
+                rows={15}
+                className="w-full px-4 py-3 border border-summit-200 dark:border-border bg-summit-50 dark:bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-spirit-300 resize-none font-mono text-sm dark:text-foreground dark:placeholder:text-muted-foreground"
+              />
+              
+              <button
+                onClick={() => {
+                  if (rawText.trim()) {
+                    const parsed = parseDevotionText(rawText);
+                    setForm(parsed);
+                    setIsParsed(true);
+                  }
+                }}
+                disabled={!rawText.trim()}
+                className="w-full py-3 bg-spirit-600 text-white rounded-xl font-medium hover:bg-spirit-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Wand2 className="w-5 h-5" />
+                자동 분석하기
+              </button>
+            </div>
+          ) : (
+            // Step 2: 파싱 결과 확인 및 수정
+            <div className="bg-white dark:bg-card rounded-xl p-6 border border-summit-100 dark:border-border space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-600" />
+                  <h2 className="font-bold text-summit-800 dark:text-foreground">분석 완료 - 확인 후 저장</h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsParsed(false);
+                    setForm(emptyDevotionForm());
+                  }}
+                  className="text-sm text-summit-500 hover:text-summit-700 dark:hover:text-foreground flex items-center gap-1"
+                >
+                  <X className="w-4 h-4" />
+                  다시 입력
+                </button>
+              </div>
+              
+              {/* 날짜 */}
+              <div>
+                <label className="block text-sm font-medium text-summit-700 dark:text-foreground mb-1">
+                  📅 날짜
+                </label>
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => updateForm("date", e.target.value)}
+                  className="w-full px-4 py-2 border border-summit-200 dark:border-border bg-white dark:bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-summit-300 dark:text-foreground"
+                />
+              </div>
+
+              {/* 제목 */}
+              <div>
+                <label className="block text-sm font-medium text-summit-700 dark:text-foreground mb-1">
+                  📝 제목
+                </label>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={(e) => updateForm("title", e.target.value)}
+                  className="w-full px-4 py-2 border border-summit-200 dark:border-border bg-white dark:bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-summit-300 dark:text-foreground"
+                />
+              </div>
+
+              {/* 성경 구절 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-summit-700 dark:text-foreground mb-1">
+                    📖 성경 구절
+                  </label>
+                  <input
+                    type="text"
+                    value={form.bibleVerse}
+                    onChange={(e) => updateForm("bibleVerse", e.target.value)}
+                    className="w-full px-4 py-2 border border-summit-200 dark:border-border bg-white dark:bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-summit-300 dark:text-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-summit-700 dark:text-foreground mb-1">
+                    성경 본문
+                  </label>
+                  <input
+                    type="text"
+                    value={form.bibleText}
+                    onChange={(e) => updateForm("bibleText", e.target.value)}
+                    className="w-full px-4 py-2 border border-summit-200 dark:border-border bg-white dark:bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-summit-300 dark:text-foreground"
+                  />
+                </div>
+              </div>
+
+              {/* 본문 */}
+              <div>
+                <label className="block text-sm font-medium text-summit-700 dark:text-foreground mb-1">
+                  📄 기도수첩 본문
+                </label>
+                <textarea
+                  value={form.content}
+                  onChange={(e) => updateForm("content", e.target.value)}
+                  rows={6}
+                  className="w-full px-4 py-2 border border-summit-200 dark:border-border bg-white dark:bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-summit-300 resize-none dark:text-foreground"
+                />
+              </div>
+
+              {/* 링크들 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-summit-700 dark:text-foreground mb-1">
+                    🔗 문서 링크
+                  </label>
+                  <input
+                    type="url"
+                    value={form.externalLink}
+                    onChange={(e) => updateForm("externalLink", e.target.value)}
+                    className="w-full px-4 py-2 border border-summit-200 dark:border-border bg-white dark:bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-summit-300 dark:text-foreground text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-summit-700 dark:text-foreground mb-1">
+                    🎬 유튜브 링크
+                  </label>
+                  <input
+                    type="url"
+                    value={form.youtubeLink}
+                    onChange={(e) => updateForm("youtubeLink", e.target.value)}
+                    className="w-full px-4 py-2 border border-summit-200 dark:border-border bg-white dark:bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-summit-300 dark:text-foreground text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* 기도제목 */}
+              <div>
+                <label className="block text-sm font-medium text-summit-700 dark:text-foreground mb-1">
+                  🙏 기도제목
+                </label>
+                {form.prayerPoints.map((point, index) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={point}
+                      onChange={(e) => updatePrayerPoint(index, e.target.value)}
+                      className="flex-1 px-4 py-2 border border-summit-200 dark:border-border bg-white dark:bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-summit-300 dark:text-foreground"
+                    />
+                    {form.prayerPoints.length > 1 && (
+                      <button
+                        onClick={() => removePrayerPoint(index)}
+                        className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={addPrayerPoint}
+                  className="text-sm text-summit-600 dark:text-muted-foreground hover:text-summit-800 flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  기도제목 추가
+                </button>
+              </div>
+
+              {/* 저장 버튼 */}
+              <button
+                onClick={async () => {
+                  await saveDevotion();
+                  setIsParsed(false);
+                  setRawText("");
+                  setForm(emptyDevotionForm());
+                }}
+                disabled={saving}
+                className="w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <>저장 중...</>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    저장하기
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 수동 등록 폼 */}
       {activeTab === "register" && (
         <div className="bg-white dark:bg-card rounded-xl p-6 border border-summit-100 dark:border-border space-y-4">
           <h2 className="font-bold text-summit-800 dark:text-foreground mb-4">기도수첩 등록</h2>
