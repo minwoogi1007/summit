@@ -8,8 +8,20 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 // 허용된 이미지 형식
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic'];
 
+// 압축 설정 (모바일 최적화)
+const COMPRESSION_CONFIG = {
+  maxWidth: 1024,      // 최대 너비 (기존 1920 → 1024)
+  quality: 0.7,        // 품질 (기존 0.8 → 0.7)
+  thumbnailWidth: 200, // 썸네일 너비 (기존 300 → 200)
+  thumbnailQuality: 0.5, // 썸네일 품질 (기존 0.6 → 0.5)
+};
+
 // 이미지 압축 (Canvas 사용)
-async function compressImage(file: File, maxWidth = 1920, quality = 0.8): Promise<Blob> {
+async function compressImage(
+  file: File, 
+  maxWidth = COMPRESSION_CONFIG.maxWidth, 
+  quality = COMPRESSION_CONFIG.quality
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -53,8 +65,12 @@ async function compressImage(file: File, maxWidth = 1920, quality = 0.8): Promis
 }
 
 // 썸네일 생성
-async function createThumbnail(file: File, maxWidth = 300): Promise<Blob> {
-  return compressImage(file, maxWidth, 0.6);
+async function createThumbnail(file: File): Promise<Blob> {
+  return compressImage(
+    file, 
+    COMPRESSION_CONFIG.thumbnailWidth, 
+    COMPRESSION_CONFIG.thumbnailQuality
+  );
 }
 
 // 고유 파일명 생성
