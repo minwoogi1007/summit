@@ -8,15 +8,17 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 // 허용된 이미지 형식
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic'];
 
-// 압축 설정 (모바일 최적화)
+// 압축 설정 (용량 최소화 - 모바일 최적화)
 const COMPRESSION_CONFIG = {
-  maxWidth: 1024,      // 최대 너비 (기존 1920 → 1024)
-  quality: 0.7,        // 품질 (기존 0.8 → 0.7)
-  thumbnailWidth: 200, // 썸네일 너비 (기존 300 → 200)
-  thumbnailQuality: 0.5, // 썸네일 품질 (기존 0.6 → 0.5)
+  maxWidth: 800,       // 최대 너비 (모바일에 충분)
+  maxHeight: 800,      // 최대 높이
+  quality: 0.6,        // 품질 60% (파일 크기 최소화)
+  thumbnailWidth: 150, // 썸네일 너비
+  thumbnailQuality: 0.4, // 썸네일 품질
+  maxFileSizeKB: 200,  // 목표 최대 파일 크기 (200KB)
 };
 
-// 이미지 압축 (Canvas 사용)
+// 이미지 압축 (Canvas 사용) - 목표 크기 이하로 압축
 async function compressImage(
   file: File, 
   maxWidth = COMPRESSION_CONFIG.maxWidth, 
@@ -24,14 +26,19 @@ async function compressImage(
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       let width = img.width;
       let height = img.height;
+      const maxHeight = COMPRESSION_CONFIG.maxHeight;
       
-      // 최대 너비에 맞게 리사이즈
+      // 가로/세로 비율 유지하며 리사이즈
       if (width > maxWidth) {
         height = (height * maxWidth) / width;
         width = maxWidth;
+      }
+      if (height > maxHeight) {
+        width = (width * maxHeight) / height;
+        height = maxHeight;
       }
       
       const canvas = document.createElement('canvas');
@@ -46,17 +53,31 @@ async function compressImage(
       
       ctx.drawImage(img, 0, 0, width, height);
       
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error('Failed to compress image'));
-          }
-        },
-        'image/jpeg',
-        quality
-      );
+      // 목표 크기 이하가 될 때까지 품질 낮추기
+      const targetSizeBytes = COMPRESSION_CONFIG.maxFileSizeKB * 1024;
+      let currentQuality = quality;
+      let blob: Blob | null = null;
+      
+      while (currentQuality >= 0.3) {
+        blob = await new Promise<Blob | null>((res) => {
+          canvas.toBlob(res, 'image/jpeg', currentQuality);
+        });
+        
+        if (blob && blob.size <= targetSizeBytes) {
+          break;
+        }
+        
+        currentQuality -= 0.1;
+      }
+      
+      if (blob) {
+        console.log(`이미지 압축: ${(file.size / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB (품질: ${(currentQuality * 100).toFixed(0)}%)`);
+        resolve(blob);
+      } else {
+        reject(new Error('Failed to compress image'));
+      }
+      
+      URL.revokeObjectURL(img.src);
     };
     
     img.onerror = () => reject(new Error('Failed to load image'));
