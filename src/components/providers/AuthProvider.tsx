@@ -119,36 +119,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  // Google 로그인 (PWA standalone 모드 대응)
+  // Google 로그인 (iOS PWA 대응 - 항상 popup 시도)
   const signInWithGoogle = async () => {
     try {
-      // PWA standalone 모드 감지
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
-        || (window.navigator as { standalone?: boolean }).standalone === true
-        || document.referrer.includes('android-app://');
+      // iOS 감지
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      // Android 감지
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      // WebView 감지 (인앱 브라우저)
+      const isWebView = /FBAN|FBAV|Instagram|Line|KAKAOTALK|wv/i.test(navigator.userAgent);
       
-      // 모바일 또는 WebView 감지
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const isWebView = /FBAN|FBAV|Instagram|Line|KAKAOTALK/i.test(navigator.userAgent);
-      
-      // PWA standalone 모드에서는 새 창으로 열기 (팝업/리다이렉트 모두 문제)
-      if (isStandalone) {
-        // PWA에서는 시스템 브라우저로 로그인 페이지 열기
-        // redirect 방식 사용 - 인증 후 PWA로 돌아옴
+      // WebView에서는 redirect 필수 (popup 안됨)
+      if (isWebView) {
         await signInWithRedirect(auth, googleProvider);
         return;
       }
       
-      if (isMobile || isWebView) {
-        // 모바일/WebView에서는 redirect 방식 사용
+      // iOS와 데스크탑: popup 방식 (세션 공유 문제 해결)
+      // Android: redirect 방식 (popup이 불안정)
+      if (isAndroid) {
         await signInWithRedirect(auth, googleProvider);
       } else {
-        // 데스크탑에서는 popup 방식 사용
+        // iOS 및 데스크탑: popup 시도
         try {
           await signInWithPopup(auth, googleProvider);
         } catch (popupError: unknown) {
-          // 팝업이 차단된 경우 redirect로 폴백
-          if ((popupError as { code?: string })?.code === 'auth/popup-blocked') {
+          const errorCode = (popupError as { code?: string })?.code;
+          // 팝업이 차단되거나 취소된 경우 redirect로 폴백
+          if (errorCode === 'auth/popup-blocked' || errorCode === 'auth/popup-closed-by-user') {
+            console.log('Popup 실패, redirect로 전환');
             await signInWithRedirect(auth, googleProvider);
           } else {
             throw popupError;
