@@ -373,24 +373,24 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
 
               <div className={cn(
                 "grid gap-0",
-                // 모바일: 항상 세로, PC: 크기에 따라 분할
-                videoSize === 'small' && "grid-cols-1 md:grid-cols-3",
-                videoSize === 'medium' && "grid-cols-1 md:grid-cols-2",
-                videoSize === 'large' && "grid-cols-1"
+                // 모바일 세로: 1열, 모바일 가로 & PC: 2열 분할
+                videoSize === 'small' && "grid-cols-1 landscape:grid-cols-2 md:grid-cols-3",
+                videoSize === 'medium' && "grid-cols-1 landscape:grid-cols-2 md:grid-cols-2",
+                videoSize === 'large' && "grid-cols-1 landscape:grid-cols-2"
               )}>
-                {/* 비디오 영역 - 모바일에서 높이 조절 */}
+                {/* 비디오 영역 */}
                 <div className={cn(
                   "relative",
                   videoSize === 'small' && "md:col-span-1",
                   videoSize === 'medium' && "md:col-span-1",
-                  videoSize === 'large' && "col-span-1"
+                  videoSize === 'large' && "landscape:col-span-1"
                 )}>
                   <div className={cn(
                     "relative w-full overflow-hidden",
-                    // 모바일: 높이 조절, PC: 16:9 비율
-                    videoSize === 'small' && "h-[30vh] md:h-auto md:aspect-video",
-                    videoSize === 'medium' && "h-[45vh] md:h-auto md:aspect-video",
-                    videoSize === 'large' && "h-[65vh] md:h-auto md:aspect-video"
+                    // 모바일 세로: 높이 조절, 모바일 가로 & PC: 16:9 비율
+                    videoSize === 'small' && "h-[30vh] landscape:h-[80vh] landscape:aspect-auto md:h-auto md:aspect-video",
+                    videoSize === 'medium' && "h-[45vh] landscape:h-[80vh] landscape:aspect-auto md:h-auto md:aspect-video",
+                    videoSize === 'large' && "h-[65vh] landscape:h-[80vh] landscape:aspect-auto md:h-auto md:aspect-video"
                   )}>
                     <div id="youtube-player" className="absolute inset-0 w-full h-full" />
                   </div>
@@ -398,10 +398,10 @@ export function TodaysDevotion({ devotion, messageNotes = "", onSaveNotes }: Tod
 
                 {/* 메모 영역 */}
                 <div className={cn(
-                  "flex flex-col border-t md:border-t-0 md:border-l border-summit-100 dark:border-border",
+                  "flex flex-col border-t landscape:border-t-0 landscape:border-l md:border-t-0 md:border-l border-summit-100 dark:border-border",
                   videoSize === 'small' && "md:col-span-2",
                   videoSize === 'medium' && "md:col-span-1",
-                  videoSize === 'large' && "col-span-1"
+                  videoSize === 'large' && "landscape:col-span-1"
                 )}>
                   {/* 메모 헤더 */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-summit-100 dark:border-border bg-summit-50 dark:bg-muted">
